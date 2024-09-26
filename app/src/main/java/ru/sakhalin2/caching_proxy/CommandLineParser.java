@@ -5,9 +5,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
+import static ru.sakhalin2.caching_proxy.CachingProxyUtils.*;
 
+/**
+ * A command line parser interpreters command line arguments and maps them in the following map-object for {@link CachingProxy}:
+ * {@link CommandSwitch} enum object => a string (switch option or option list as a string 'o1,o2,...')
+ *
+ * @see CachingProxy
+ * @see CommandSwitch
+ */
 public class CommandLineParser implements ICommandLineParser {
 
     private final List<String> argList;
@@ -23,21 +33,26 @@ public class CommandLineParser implements ICommandLineParser {
 
         while (it.hasNext()) {
             var cmdSwitchArg = it.next();
-            Matcher cmdSwitchMatcher = ICommandLineParser.CMD_SWITCH_VALUE_REGEXP_PATTERN.matcher(cmdSwitchArg);
+            Matcher cmdSwitchMatcher = CMD_SWITCH_VALUE_REGEXP_PATTERN.matcher(cmdSwitchArg);
             if (cmdSwitchMatcher.matches() && cmdSwitchMatcher.groupCount() > 0) {
                 String cmdSwitchVal = cmdSwitchMatcher.group(1);
-                CommandSwitch cmdSwitch = CommandSwitch.valueOf(CommandSwitch.class, cmdSwitchVal);
+                Optional<CommandSwitch> cmdSwitchOptional = Stream.of(CommandSwitch.values())
+                        .filter((cmd) -> cmdSwitchVal.length() == 1 ? cmdSwitchVal.equals(cmd.getShortFormat())
+                                : cmdSwitchVal.equals(cmd.getLongFormat()))
+                        .findFirst();
+
+                var cmdSwitch = cmdSwitchOptional.get();
                 if (cmdSwitch.isOptionSupplier()) {
                     var cmdSwitchArgValue = it.next();
                     Pattern cmdSwitchValPattern = Pattern.compile(cmdSwitch.getOptionRegExp());
                     Matcher cmdSwitchValMatcher = cmdSwitchValPattern.matcher(cmdSwitchArgValue);
                     if (cmdSwitchValMatcher.matches()) {
                         cmdSwitchMap.put(cmdSwitch, cmdSwitchArgValue);
-                    }
-                    {
+                    } else {
                         throw new IllegalArgumentException("Can't match command switch value " + cmdSwitchArgValue);
                     }
-
+                } else {
+                    cmdSwitchMap.put(cmdSwitch, CMD_SWITCH_DEFAULT_ARGUMENT_LIST);
                 }
             } else {
                 throw new IllegalArgumentException("Can't match command switch " + cmdSwitchArg);

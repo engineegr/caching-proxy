@@ -11,23 +11,23 @@ public class CachingProxy {
         switchActionMap.put(CommandSwitch.PORT_NUMBER, this::setPort);
         switchActionMap.put(CommandSwitch.ORIGIN_URL, this::setOriginUrl);
         switchActionMap.put(CommandSwitch.CLEAR_CACHE, this::clearCache);
+
     };
 
-    public void apply(CommandSwitch cmdSwitch, String optionList) {
+    public void apply(CommandSwitch cmdSwitch, String option) {
         BiConsumer<CommandSwitch, String> action = switchActionMap.get(cmdSwitch);
-
-        action.accept(cmdSwitch, optionList);
+        action.accept(cmdSwitch, option);
     }
 
-    public void setPort(CommandSwitch cmdSwitch, String optionList) {
-        System.out.println(String.format("Set port %d", Integer.parseInt(optionList)));
+    public void setPort(CommandSwitch cmdSwitch, String option) {
+        System.out.println(String.format("Set port %d", Integer.parseInt(option)));
     }
 
-    public void setOriginUrl(CommandSwitch cmdSwitch, String optionList) {
-        System.out.println("Set originUrl " + optionList);
+    public void setOriginUrl(CommandSwitch cmdSwitch, String originUrl) {
+        System.out.println("Set originUrl " + originUrl);
     }
 
-    public void clearCache(CommandSwitch cmdSwitch, String optionList) {
+    public void clearCache(CommandSwitch cmdSwitch, String option) {
         System.out.println("Clear cache");
     }
 
@@ -45,10 +45,10 @@ public class CachingProxy {
     }
 
     public static void main(String[] args) {
-
-        var cachingProxy = new CachingProxy();
-        var parser = new CommandLineParser(args);
+        var parser = new CommandLineParser(new String[] { "--origin", "https://uibakery.io/regex-library/url-regex-java" });
         Map<CommandSwitch, String> switchKeyArgMap = parser.parse();
+        var cachingProxy = new CachingProxy();
+        // Setup our proxy
         for (var it : switchKeyArgMap.entrySet()) {
             cachingProxy.apply(it.getKey(), it.getValue());
         }
