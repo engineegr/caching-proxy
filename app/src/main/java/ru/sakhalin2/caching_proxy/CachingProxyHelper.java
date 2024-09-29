@@ -4,7 +4,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
-public final class CachingProxyUtils {
+public final class CachingProxyHelper {
 
     public static String getCombinedCommandSwitchRegExp() {
         Stream<String> t = Stream.of(CommandSwitch.values()).map(cmd -> {
@@ -19,15 +19,13 @@ public final class CachingProxyUtils {
 
     public static final String EMPTY_STRING = "";
 
-    public static final String CMD_SWITCH_DEFAULT_ARGUMENT_LIST = "CMD_SWITCH_DEFAULT_ARGUMENT_LIST";
-
     public static final String CMD_SWITCH_VALUE_DELIMITER = "|";
 
-    public static final Pattern CMD_SWITCH_VALUE_REGEXP_PATTERN = Pattern.compile(
+    public static final Pattern COMBINED_ALL_CMD_SWITCH_REGEXPS_PATTERN = Pattern.compile(
             String.format("(?:--|-)(%s)", getCombinedCommandSwitchRegExp()),
             Pattern.UNICODE_CASE);
 
-    private CachingProxyUtils() {
+    private CachingProxyHelper() {
      //   
     }    
 }

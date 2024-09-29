@@ -78,7 +78,7 @@ public class ParserTest {
     }
 
     @Test
-    public void testPortAndOriginURLLongFromatSwitch() {
+    public void testMultipleMixedFormatSwitch() {
         var parser = new CommandLineParser(new String[] { "--port", "35535", "--origin", "https://uibakery.io", "-r" });
         Map<CommandSwitch, String> cmdSwitchArgsMap = parser.parse();
         assumeThat(

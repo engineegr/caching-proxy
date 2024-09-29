@@ -1,62 +1,77 @@
 package ru.sakhalin2.caching_proxy;
 
-import static ru.sakhalin2.caching_proxy.CachingProxyUtils.*;
+import static ru.sakhalin2.caching_proxy.CachingProxyHelper.*;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public enum CommandSwitch {
 
-    PORT_NUMBER("port".concat(CMD_SWITCH_VALUE_DELIMITER).concat("p"), true, false, "", "\\d+"),
-    ORIGIN_URL("origin".concat(CMD_SWITCH_VALUE_DELIMITER).concat("u"), true, false, "",
+    PORT_NUMBER(
+            new CommandOptions("port".concat(CMD_SWITCH_VALUE_DELIMITER).concat("p"), true, false, "", "\\d+"),
+            CachingProxy::setPort),
+    ORIGIN_URL(new CommandOptions("origin".concat(CMD_SWITCH_VALUE_DELIMITER).concat("u"), true, false, "",
             "^https?:\\/\\/(?:www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b(?:[-a-zA-Z0-9()@:%_\\+.~#?&\\/=]*)$"),
-    CLEAR_CACHE("clear-cache".concat(CMD_SWITCH_VALUE_DELIMITER).concat("r"), false, false, "", "");
+            CachingProxy::setOriginUrl),
+    CLEAR_CACHE(new CommandOptions("clear-cache".concat(CMD_SWITCH_VALUE_DELIMITER).concat("r"), false, false, "",
+            ""), CachingProxy::clearCache);
 
-    private final String title;
+    private final CommandOptions options;
 
-    private final boolean optionSupplier;
+    private final ICachingProxyAction cmdAction;
 
-    private final boolean optionList;
-
-    private final String optionDelimiter;
-
-    private final String optionRegExp;
-
-    private CommandSwitch(String aTitle, boolean aValueSupplier, boolean aListValue, String aDelimiter,
-            String aValueRegExp) {
-        this.title = aTitle;
-        this.optionSupplier = aValueSupplier;
-        this.optionList = aListValue;
-        this.optionDelimiter = aDelimiter;
-        this.optionRegExp = aValueRegExp;
+    private CommandSwitch(CommandOptions anOptions,
+            ICachingProxyAction aCmdAction) {
+        this.options = anOptions;
+        this.cmdAction = aCmdAction;
     }
 
     public String getTitle() {
-        return title;
+        return this.options.title();
     }
 
     public boolean hasShortFormat() {
-        return title.contains(CMD_SWITCH_VALUE_DELIMITER);
+        return options.title().contains(CMD_SWITCH_VALUE_DELIMITER);
     }
 
     public String getLongFormat() {
-        return hasShortFormat() ? title.split("\\".concat(CMD_SWITCH_VALUE_DELIMITER))[0] : title;
+        return hasShortFormat() ? options.title().split("\\".concat(CMD_SWITCH_VALUE_DELIMITER))[0] : options.title();
     }
 
     public String getShortFormat() {
-        return hasShortFormat() ? title.split("\\".concat(CMD_SWITCH_VALUE_DELIMITER))[1] : EMPTY_STRING;
+        return hasShortFormat() ? options.title().split("\\".concat(CMD_SWITCH_VALUE_DELIMITER))[1] : EMPTY_STRING;
     }
 
-    public String getOptionRegExp() {
-        return optionRegExp;
+    public String getArgumentRegExp() {
+        return options.argRegExp();
     }
 
-    public boolean isOptionSupplier() {
-        return optionSupplier;
+    public boolean isArgsRequired() {
+        return options.isArgsRequired();
     }
 
-    public boolean isOptionList() {
-        return optionList;
+    public boolean isArgList() {
+        return options.isArgList();
     }
 
-    public String getOptionDelimiter() {
-        return optionDelimiter;
+    public String getArgListDelimiter() {
+        return options.argListDelimiter();
+    }
+
+    public void apply(CachingProxy cachingProxy, String args) {
+        this.cmdAction.apply(cachingProxy, this, args);
+    }
+
+    public List<String> extractArgs(String args) throws IllegalArgumentException {
+        if (isArgsRequired()) {
+            Pattern cmdSwitchValPattern = Pattern.compile(getArgumentRegExp());
+            Matcher cmdSwitchValMatcher = cmdSwitchValPattern.matcher(args);
+            if (cmdSwitchValMatcher.matches()) {
+                return List.of(args.split(getArgumentRegExp()));
+            } else {
+                throw new IllegalArgumentException("Can't match command switch options: " + args);
+            }
+        }
+        return null;
     }
 }

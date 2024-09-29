@@ -9,11 +9,20 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import static ru.sakhalin2.caching_proxy.CachingProxyUtils.*;
+import static ru.sakhalin2.caching_proxy.CachingProxyHelper.*;
 
 /**
- * A command line parser interpreters command line arguments and maps them in the following map-object for {@link CachingProxy}:
- * {@link CommandSwitch} enum object => a string (switch option or option list as a string 'o1,o2,...')
+ * A command line parser interpreters command line arguments and maps them in
+ * the following map-object for {@link CachingProxy}:
+ * {@link CommandSwitch} enum object => a string (switch option or option list
+ * as a string 'o1,o2,...')
+ * 
+ * Passing argument examples:
+ * <ul>
+ * <li>caching-proxy --clear-cache</li>
+ * <li>caching-proxy -r</li>
+ * <li>caching-proxy --port 35535 --origin https://google.com</li>
+ * </ul>
  *
  * @see CachingProxy
  * @see CommandSwitch
@@ -33,7 +42,7 @@ public class CommandLineParser implements ICommandLineParser {
 
         while (it.hasNext()) {
             var cmdSwitchArg = it.next();
-            Matcher cmdSwitchMatcher = CMD_SWITCH_VALUE_REGEXP_PATTERN.matcher(cmdSwitchArg);
+            Matcher cmdSwitchMatcher = COMBINED_ALL_CMD_SWITCH_REGEXPS_PATTERN.matcher(cmdSwitchArg);
             if (cmdSwitchMatcher.matches() && cmdSwitchMatcher.groupCount() > 0) {
                 String cmdSwitchVal = cmdSwitchMatcher.group(1);
                 Optional<CommandSwitch> cmdSwitchOptional = Stream.of(CommandSwitch.values())
@@ -42,17 +51,20 @@ public class CommandLineParser implements ICommandLineParser {
                         .findFirst();
 
                 var cmdSwitch = cmdSwitchOptional.get();
-                if (cmdSwitch.isOptionSupplier()) {
-                    var cmdSwitchArgValue = it.next();
-                    Pattern cmdSwitchValPattern = Pattern.compile(cmdSwitch.getOptionRegExp());
-                    Matcher cmdSwitchValMatcher = cmdSwitchValPattern.matcher(cmdSwitchArgValue);
+                if (cmdSwitch.isArgsRequired()) {
+                    if (!it.hasNext()) {
+                        throw new IllegalArgumentException("Can't match command switch: no options are provided");
+                    }
+                    var cmdSwitchArguments = it.next();
+                    Pattern cmdSwitchValPattern = Pattern.compile(cmdSwitch.getArgumentRegExp());
+                    Matcher cmdSwitchValMatcher = cmdSwitchValPattern.matcher(cmdSwitchArguments);
                     if (cmdSwitchValMatcher.matches()) {
-                        cmdSwitchMap.put(cmdSwitch, cmdSwitchArgValue);
+                        cmdSwitchMap.put(cmdSwitch, cmdSwitchArguments);
                     } else {
-                        throw new IllegalArgumentException("Can't match command switch value " + cmdSwitchArgValue);
+                        throw new IllegalArgumentException("Can't match command switch options: " + cmdSwitchArguments);
                     }
                 } else {
-                    cmdSwitchMap.put(cmdSwitch, CMD_SWITCH_DEFAULT_ARGUMENT_LIST);
+                    cmdSwitchMap.put(cmdSwitch, EMPTY_STRING);
                 }
             } else {
                 throw new IllegalArgumentException("Can't match command switch " + cmdSwitchArg);
