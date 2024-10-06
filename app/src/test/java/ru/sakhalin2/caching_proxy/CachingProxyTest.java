@@ -3,8 +3,9 @@
  */
 package ru.sakhalin2.caching_proxy;
 
-import org.junit.Test;
 import java.util.Map;
+
+import org.junit.Test;
 
 public class CachingProxyTest {
 
@@ -12,6 +13,6 @@ public class CachingProxyTest {
     public void testSetupCachingProxy() {
         var parser = new CommandLineParser(new String[] { "--port", "35535", "--origin", "https://uibakery.io", "-r" });
         Map<CommandSwitch, String> cmdSwitchArgsMap = parser.parse();
-        new CachingProxy().setup(cmdSwitchArgsMap);
+        new CachingProxy("./app/logs").setup(cmdSwitchArgsMap);
     }
 }
